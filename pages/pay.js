@@ -1,24 +1,133 @@
 import Head from 'next/head'
-import Link from 'next/Link'
+import { useState } from 'react';
+import {loadStripe} from '@stripe/stripe-js';
+import Countdown from "react-countdown";
+
+const public_live_key = '<you_public_live_key>'
+const public_test_key = '<you_public_test_key>'
+
+const toMinorUnits = (amount) => {
+  return Math.floor(amount*100)
+}
+
+// Countdown timer
+const Timer = function() {
+	const renderer = ({ hours, minutes, seconds, completed }) => {
+		const style = {
+			color: 'mediumvioletred'
+		}
+	  if (!completed) {
+	    return (
+	      <span className="timer" style={style}>
+	        {minutes}:{seconds}
+	      </span>
+	    );
+	  }
+	};
+
+  return <Countdown
+    date={Date.now() + 5 * 60 * 1000}
+    precision={2}
+    renderer={renderer}
+  />
+}
 
 export default function Home() {
+  const [vpa, setVpa] = useState('');
+  const [amount, setAmount] = useState(0);
+	const [paymentState, setPaymentState] = useState('start');
+
+
+	function confirm(stripe, clientSecret, vpa) {
+	  setPaymentState('processing')
+
+		stripe.confirmUpiPayment(
+	    clientSecret,
+	    {
+	      payment_method: {
+	        upi: {
+	          vpa: vpa,
+	        },
+	      }
+	    }
+	  ).then(function(result) {
+	    if(result.error) {
+	    	setPaymentState('error')
+	      console.log({result_error: result.error})
+	    } else{
+	    	setPaymentState('done')
+	      console.log({result})
+	    }
+	  });
+	}
+
+	async function handlePayClick(e) {
+		const stripe = await loadStripe(public_live_key, 
+			{
+				betas: ['upi_beta_1']
+			}
+		);
+
+    e.preventDefault();
+    console.log('The link was clicked.');
+    const result = await fetch(`/api/create-pi?amount=${toMinorUnits(amount)}`)
+    const pi = await result.json()
+    const clientSecret = pi.client_secret
+    console.log({pi, clientSecret})
+
+    confirm(stripe, clientSecret, vpa)
+  }
+
+  let cta = '' 
+  if (paymentState == 'start') {
+  	cta = <a href="#" onClick={handlePayClick}>
+    	Pay
+    </a>
+  }
+  else if (paymentState == 'done') {
+  	cta = 'Done ✅'
+  }
+  else if (paymentState == 'error') {
+  	cta = 'error: something went wrong'
+  } 
+  else if (paymentState == 'processing') {
+  	cta = <div>
+  		<span>waiting for auth </span>
+  		<span className="timer">
+	  		<Timer />
+  		</span>
+  	</div>
+  } else {
+  	cta = 'something went wrong'
+  }
+
   return (
     <div className="container">
       <Head>
-        <title>Create Next App</title>
+        <title>Pay</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main>
-        <h1 className="title">
-          Sample Implementation <a href="http://stripe.com">UPI</a>
-        </h1>
-        <hr />
-        <Link href="/pay"><button>Go to Payment Page</button></Link>
+        <p> VPA: </p>
+      	<input className="vpa" placeholder="enter your vpa" value={vpa} onChange={e => setVpa(e.target.value)} ></input>
+      	
+        <p> Amount in INR: </p>
+        <input className="vpa" placeholder="enter amount to be paid in INR" value={amount} onChange={e => setAmount(e.target.value)} ></input>
+        <p>will create a Payment Intent for {toMinorUnits(amount)} paise (minor units)</p>
+        <h2 className="title">
+          {cta}
+        </h2>
       </main>
 
 
       <style jsx>{`
+      	.vpa {
+      		height: 40px;
+      		width: 400px;
+          margin-bottom: 10px;
+      	}
+
 
         .container {
           min-height: 100vh;
@@ -35,7 +144,7 @@ export default function Home() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          align-items: center;
+          align-items: left;
         }
 
         footer {
@@ -75,8 +184,8 @@ export default function Home() {
 
         .title {
           margin: 0;
-          line-height: 1.15;
-          font-size: 4rem;
+          line-height: 2.15;
+          font-size: 2rem;
         }
 
         .title,

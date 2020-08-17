@@ -8,8 +8,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^1.8.0",
     "next": "9.3.5",
     "react": "16.13.1",
-    "react-dom": "16.13.1"
+    "react-countdown": "^2.2.1",
+    "react-dom": "16.13.1",
+    "stripe": "^8.77.0"
   }
 }
