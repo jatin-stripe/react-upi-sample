@@ -8,5 +8,5 @@ This is built with https://nextjs.org/
 
 # Code
 
-* Backend Code (API handlers) reside in the `pages/api` directory
-* Frontend Code in under `pages` directory
+* Backend Code (API handlers) resides in the `pages/api` directory
+* Frontend Code is under `pages` directory
